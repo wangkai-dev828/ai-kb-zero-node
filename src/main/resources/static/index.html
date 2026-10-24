@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>AI 知识库问答系统 · 首页</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.4.27/dist/vue.global.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2.7.5/dist/index.css">
+  <script src="https://cdn.jsdelivr.net/npm/element-plus@2.7.5/dist/index.full.min.js"></script>
+  <style>
+    body { margin: 0; background: #f5f7fa; font-family: "Microsoft YaHei", sans-serif; }
+    .hero { max-width: 900px; margin: 60px auto; text-align: center; }
+    .hero h1 { color: #303133; }
+    .hero p { color: #909399; }
+    .cards { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 40px; }
+    .card { width: 260px; background: #fff; border-radius: 12px; padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,.08); cursor: pointer; transition: .2s; }
+    .card:hover { transform: translateY(-4px); box-shadow: 0 6px 20px rgba(0,0,0,.12); }
+    .card h3 { color: #409eff; margin-top: 0; }
+    .card p { color: #606266; font-size: 14px; text-align: left; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="hero">
+    <h1>🤖 企业级 AI 知识库问答系统</h1>
+    <p>SpringBoot 3 + Spring AI + MySQL + Vue CDN（零 Node.js）</p>
+    <div class="cards">
+      <div class="card" onclick="location.href='chat.html'">
+        <h3>💬 基础聊天</h3>
+        <p>普通 HTTP 问答，支持多轮会话，聊天记录保存到 MySQL，可回溯查询。</p>
+      </div>
+      <div class="card" onclick="location.href='sse.html'">
+        <h3>⚡ SSE 流式输出</h3>
+        <p>EventSource 实时接收模型生成内容，实现“打字机”式逐字输出效果。</p>
+      </div>
+      <div class="card" onclick="location.href='prompt.html'">
+        <h3>🎯 Prompt 工程</h3>
+        <p>对比普通提问与角色设定、固定格式输出的差异，体验 Prompt 的可控性。</p>
+      </div>
+      <div class="card" onclick="location.href='rag.html'">
+        <h3>📚 RAG 知识库</h3>
+        <p>录入企业私有知识，检索切片拼接上下文，让 AI 依据资料精准回答。</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  Vue.createApp({}).mount('#app');
+</script>
+<script src="js/site-common.js"></script>
+</body>
+</html>

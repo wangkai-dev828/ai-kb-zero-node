@@ -1,0 +1,26 @@
+# ---- 构建产物 ----
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# ---- IDE ----
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+
+# ---- 日志与临时文件 ----
+logs/
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# ---- 敏感配置（不要把真实 Key 提交到仓库）----
+# 本项目的 Key 从环境变量 DEEPSEEK_API_KEY 读取，不在代码仓库中出现
+application-local.yml

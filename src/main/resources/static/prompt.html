@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Prompt 工程实验台</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.4.27/dist/vue.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.7.2/dist/axios.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2.7.5/dist/index.css">
+  <script src="https://cdn.jsdelivr.net/npm/element-plus@2.7.5/dist/index.full.min.js"></script>
+  <style>
+    body { margin: 0; background: #f5f7fa; font-family: "Microsoft YaHei", sans-serif; }
+    .box { max-width: 760px; margin: 30px auto; }
+    .header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .answer { background: #fff; border-radius: 10px; padding: 18px; min-height: 120px;
+              box-shadow: 0 1px 4px rgba(0,0,0,.08); white-space: pre-wrap;
+              line-height: 1.7; color: #303133; margin-top: 16px; }
+  </style>
+</head>
+<body>
+<div id="app" class="box">
+  <div class="header">
+    <el-button size="small" @click="location.href='index.html'">← 返回</el-button>
+    <h2 style="margin:0">🎯 Prompt 工程实验台</h2>
+  </div>
+
+  <el-alert type="info" :closable="false"
+    title="对比实验：先用普通聊天问同一个问题，再分别用「角色设定」和「固定格式」提问，观察输出的可控性差异。"></el-alert>
+
+  <el-card style="margin-top:16px;">
+    <el-tabs v-model="mode">
+      <el-tab-pane label="🧑‍🏫 角色设定（Java 讲师）" name="teacher">
+        <el-input v-model="question" placeholder="例如：什么是面向对象？" size="large"></el-input>
+        <el-button type="primary" style="margin-top:12px" :loading="loading" @click="askTeacher">以讲师身份回答</el-button>
+      </el-tab-pane>
+      <el-tab-pane label="📐 固定格式输出（概念/例子/代码/练习）" name="format">
+        <el-input v-model="topic" placeholder="例如：HashMap" size="large"></el-input>
+        <el-button type="primary" style="margin-top:12px" :loading="loading" @click="askFormat">结构化讲解</el-button>
+      </el-tab-pane>
+    </el-tabs>
+  </el-card>
+
+  <div class="answer" v-if="answer">{{ answer }}</div>
+  <el-empty v-else description="回答将显示在这里"></el-empty>
+</div>
+<script>
+const { createApp, ref } = Vue;
+createApp({
+  setup() {
+    const mode = ref('teacher');
+    const question = ref('什么是面向对象？');
+    const topic = ref('HashMap');
+    const loading = ref(false);
+    const answer = ref('');
+
+    async function askTeacher() {
+      if (!question.value.trim() || loading.value) return;
+      loading.value = true; answer.value = '';
+      try {
+        const res = await axios.get('/api/prompt/teacher', { params: { question: question.value } });
+        answer.value = res.data.answer;
+      } catch (e) { answer.value = '❌ 请求失败：' + e.message; }
+      loading.value = false;
+    }
+
+    async function askFormat() {
+      if (!topic.value.trim() || loading.value) return;
+      loading.value = true; answer.value = '';
+      try {
+        const res = await axios.get('/api/prompt/format', { params: { topic: topic.value } });
+        answer.value = res.data.answer;
+      } catch (e) { answer.value = '❌ 请求失败：' + e.message; }
+      loading.value = false;
+    }
+
+    return { mode, question, topic, loading, answer, askTeacher, askFormat };
+  }
+}).use(ElementPlus).mount('#app');
+</script>
+<script src="js/site-common.js"></script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>RAG 知识库问答</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.4.27/dist/vue.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.7.2/dist/axios.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2.7.5/dist/index.css">
+  <script src="https://cdn.jsdelivr.net/npm/element-plus@2.7.5/dist/index.full.min.js"></script>
+  <style>
+    body { margin: 0; background: #f5f7fa; font-family: "Microsoft YaHei", sans-serif; }
+    .box { max-width: 760px; margin: 30px auto; }
+    .header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .answer { background: #fff; border-radius: 10px; padding: 18px; min-height: 120px;
+              box-shadow: 0 1px 4px rgba(0,0,0,.08); white-space: pre-wrap;
+              line-height: 1.7; color: #303133; margin-top: 16px; }
+  </style>
+</head>
+<body>
+<div id="app" class="box">
+  <div class="header">
+    <el-button size="small" @click="location.href='index.html'">← 返回</el-button>
+    <h2 style="margin:0">📚 RAG 知识库问答</h2>
+  </div>
+
+  <el-card>
+    <h4 style="margin-top:0">第一步 · 录入知识资料</h4>
+    <el-input v-model="docTitle" placeholder="文档标题，如：公司年假制度" style="margin-bottom:10px"></el-input>
+    <el-input v-model="docContent" type="textarea" :rows="6"
+      placeholder="粘贴企业私有知识文本（长文本会自动按 500 字/段切分入库）"></el-input>
+    <el-button type="success" style="margin-top:10px" :loading="saving" @click="saveDoc">保存并切分入库</el-button>
+  </el-card>
+
+  <el-card style="margin-top:16px;">
+    <h4 style="margin-top:0">第二步 · 基于知识库提问</h4>
+    <div style="display:flex; gap:10px;">
+      <el-input v-model="question" placeholder="例如：公司年假有几天？" size="large" @keyup.enter="ask"></el-input>
+      <el-button type="primary" size="large" :loading="loading" @click="ask">提问</el-button>
+    </div>
+  </el-card>
+
+  <div class="answer" v-if="answer">{{ answer }}</div>
+  <el-empty v-else description="AI 将依据录入的资料回答"></el-empty>
+</div>
+<script>
+const { createApp, ref } = Vue;
+createApp({
+  setup() {
+    const docTitle = ref('公司年假制度');
+    const docContent = ref(`公司年假制度（示例数据，可直接使用）：
+1. 入职满 1 年不满 3 年的员工，每年享有 5 天带薪年假；
+2. 入职满 3 年不满 10 年的员工，每年享有 10 天带薪年假；
+3. 入职满 10 年以上的员工，每年享有 15 天带薪年假；
+4. 年假需提前 3 个工作日在 OA 系统提交申请，经直属主管审批后生效；
+5. 当年年假可顺延至次年 3 月 31 日前使用，逾期清零；
+6. 试用期内不享有年假。`);
+    const question = ref('公司年假有几天？');
+    const saving = ref(false);
+    const loading = ref(false);
+    const answer = ref('');
+
+    async function saveDoc() {
+      if (!docTitle.value.trim() || !docContent.value.trim() || saving.value) return;
+      saving.value = true;
+      try {
+        const res = await axios.post('/api/rag/text', null, {
+          params: { title: docTitle.value, content: docContent.value }
+        });
+        ElementPlus.ElMessage.success('保存成功，文档ID=' + res.data.docId);
+      } catch (e) { ElementPlus.ElMessage.error('保存失败：' + e.message); }
+      saving.value = false;
+    }
+
+    async function ask() {
+      if (!question.value.trim() || loading.value) return;
+      loading.value = true; answer.value = '';
+      try {
+        const res = await axios.get('/api/rag/ask', { params: { question: question.value } });
+        answer.value = res.data.answer;
+      } catch (e) { answer.value = '❌ 请求失败：' + e.message; }
+      loading.value = false;
+    }
+
+    return { docTitle, docContent, question, saving, loading, answer, saveDoc, ask };
+  }
+}).use(ElementPlus).mount('#app');
+</script>
+<script src="js/site-common.js"></script>
+</body>
+</html>

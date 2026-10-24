@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>基础 AI 聊天</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.4.27/dist/vue.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.7.2/dist/axios.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2.7.5/dist/index.css">
+  <script src="https://cdn.jsdelivr.net/npm/element-plus@2.7.5/dist/index.full.min.js"></script>
+  <style>
+    body { margin: 0; background: #f5f7fa; font-family: "Microsoft YaHei", sans-serif; }
+    .box { max-width: 760px; margin: 30px auto; }
+    .header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .msg { max-width: 75%; padding: 10px 14px; border-radius: 10px; margin: 8px 0;
+           line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+    .user { background: #409eff; color: #fff; margin-left: auto; }
+    .ai   { background: #fff; color: #303133; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    .row  { display: flex; }
+    .conv { color: #909399; font-size: 12px; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+<div id="app" class="box">
+  <div class="header">
+    <el-button size="small" @click="location.href='index.html'">← 返回</el-button>
+    <h2 style="margin:0">💬 基础 AI 聊天（记录保存到 MySQL）</h2>
+  </div>
+  <div class="conv" v-if="conversationId">当前会话编号：{{ conversationId }}</div>
+  <div class="conv" v-else>新会话（发送第一条消息后自动创建）</div>
+
+  <el-card>
+    <div ref="list" style="min-height: 200px; max-height: 460px; overflow-y: auto;">
+      <div class="row" v-for="(m,i) in messages" :key="i">
+        <div class="msg" :class="m.role==='user' ? 'user' : 'ai'">{{ m.content }}</div>
+      </div>
+      <el-empty v-if="messages.length===0" description="输入问题，开始对话"></el-empty>
+    </div>
+  </el-card>
+
+  <div style="display:flex; gap:10px; margin-top:16px;">
+    <el-input v-model="input" placeholder="请输入你的问题…" @keyup.enter="send" size="large"></el-input>
+    <el-button type="primary" size="large" :loading="loading" @click="send">发送</el-button>
+  </div>
+</div>
+<script>
+const { createApp, ref, nextTick } = Vue;
+createApp({
+  setup() {
+    const input = ref('');
+    const loading = ref(false);
+    const conversationId = ref(localStorage.getItem('convId') || '');
+    const messages = ref([]);
+    const list = ref(null);
+
+    // 若刷新页面且已有会话，则拉取历史消息
+    async function loadHistory() {
+      if (!conversationId.value) return;
+      try {
+        const res = await axios.get('/api/chat/history', { params: { conversationId: conversationId.value } });
+        messages.value = res.data.map(m => ({ role: m.role, content: m.content }));
+        scrollBottom();
+      } catch (e) { console.warn('历史加载失败', e); }
+    }
+
+    function scrollBottom() {
+      nextTick(() => { if (list.value) list.value.scrollTop = list.value.scrollHeight; });
+    }
+
+    async function send() {
+      const text = input.value.trim();
+      if (!text || loading.value) return;
+      messages.value.push({ role: 'user', content: text });
+      input.value = '';
+      loading.value = true;
+      scrollBottom();
+      try {
+        const res = await axios.post('/api/chat', {
+          message: text,
+          conversationId: conversationId.value || null
+        });
+        conversationId.value = res.data.conversationId;
+        localStorage.setItem('convId', conversationId.value);
+        messages.value.push({ role: 'assistant', content: res.data.answer });
+      } catch (e) {
+        messages.value.push({ role: 'assistant', content: '❌ 请求失败：' + (e.response?.data?.message || e.message) });
+      } finally {
+        loading.value = false;
+        scrollBottom();
+      }
+    }
+
+    loadHistory();
+    return { input, loading, conversationId, messages, list, send };
+  }
+}).use(ElementPlus).mount('#app');
+</script>
+<script src="js/site-common.js"></script>
+</body>
+</html>

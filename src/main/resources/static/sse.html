@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>SSE 流式输出</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.4.27/dist/vue.global.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2.7.5/dist/index.css">
+  <script src="https://cdn.jsdelivr.net/npm/element-plus@2.7.5/dist/index.full.min.js"></script>
+  <style>
+    body { margin: 0; background: #f5f7fa; font-family: "Microsoft YaHei", sans-serif; }
+    .box { max-width: 760px; margin: 30px auto; }
+    .header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .answer { background: #fff; border-radius: 10px; padding: 18px; min-height: 200px;
+              box-shadow: 0 1px 4px rgba(0,0,0,.08); white-space: pre-wrap;
+              line-height: 1.7; color: #303133; }
+  </style>
+</head>
+<body>
+<div id="app" class="box">
+  <div class="header">
+    <el-button size="small" @click="location.href='index.html'">← 返回</el-button>
+    <h2 style="margin:0">⚡ SSE 流式输出（EventSource）</h2>
+  </div>
+
+  <el-card>
+    <div class="answer">{{ answer || '回答将在这里逐字出现…' }}<span v-if="loading">▍</span></div>
+  </el-card>
+
+  <div style="display:flex; gap:10px; margin-top:16px;">
+    <el-input v-model="input" placeholder="请输入你的问题…" @keyup.enter="send" size="large"></el-input>
+    <el-button type="primary" size="large" :loading="loading" @click="send">开始</el-button>
+    <el-button size="large" @click="stop" :disabled="!loading">停止</el-button>
+  </div>
+</div>
+<script>
+const { createApp, ref } = Vue;
+createApp({
+  setup() {
+    const input = ref('用三句话介绍一下 Spring AI');
+    const loading = ref(false);
+    const answer = ref('');
+    let es = null; // EventSource 实例
+
+    function send() {
+      const text = input.value.trim();
+      if (!text || loading.value) return;
+      stop();                       // 新请求开始前关闭旧连接
+      answer.value = '';
+      loading.value = true;
+      // encodeURIComponent 处理中文与特殊字符
+      es = new EventSource('/api/chat/stream?message=' + encodeURIComponent(text));
+      es.onmessage = (event) => {
+        // event.data 为 [DONE] 时表示流结束
+        if (event.data === '[DONE]') { stop(); return; }
+        answer.value += event.data; // 逐段追加，形成打字机效果
+      };
+      es.onerror = () => stop();    // 结束或异常时取消加载状态并关闭
+    }
+
+    function stop() {
+      if (es) { es.close(); es = null; }
+      loading.value = false;
+    }
+
+    return { input, loading, answer, send, stop };
+  }
+}).use(ElementPlus).mount('#app');
+</script>
+<script src="js/site-common.js"></script>
+</body>
+</html>
